@@ -1,64 +1,71 @@
-# digitalWriteFast
-Arduino library for faster `digitalWrite()` using direct port manipulation and macro for ease in pin assignments. 
-Which actually also does faster `pinMode()` and `digitalRead()`.
+# HolyDio
+
+Fastest and cleanest possible digital IO manipulation functions for
+*duino SBCs.
+
+The libray is implemented _header-only_. I find that desirable!
+
+There are several benefits of HolyDio compared to "fastDigitalWrite" and
+other similar libraries:
+
+- HolyDio does _not_ use polluting and dangerous macros. Instead it uses
+  lex- and type-safe _constexpr functions_ and _templating_ (C++11/14).
+- HolyDio composes multiple writes into one single register write
+  automatically _where possible_! If you connect, say a stepper motor,
+  on pins that _reside on the same hardware port_.
+   - This gives us _one_, _timing synced_, operation totalling about
+     _200 ns_ — in contrast to doing four individual writes totalling
+     around 24,000 ns (!) with the standard arduino slowmo-lib.
+   - Yes! It would take _a hundred arduinos' combined processing power_
+     to get the same performance using stdlib functions! Suck on that.
+
+## Name
+- Digital Input Output, and the rest obviously is a word play on the
+  awesome 80's hit song / album.
 
 ## Usage
-Include the library:
-`#include <digitalWriteFast.h>`
+- Add the lib to you project with: `glue add HolyDio` - or some other
+  way (see "Installation")
+- Include the library in you source: `#include <HolyDio.h>`
 
-Macro definitions:
-* `digitalWriteFast(pinNum, state)` (sets or clears pin/port faster) 
-* `pinModeFast(pinNum, mode)` (sets pin/port as input or output faster)
-* `digitalReadFast(pinNum)`(reads the state of pin/port faster) 
+## Performance
 
-Parameters:
-* `pinNum` is the number written on the Arduino board.
-* `state` is weather pin is to be set `HIGH` or `LOW`
-* `mode` is weather pin is to be set `INPUT` or `OUTPUT`
+*TODO* profile for composite-set etc..
 
-In order to toggle fast, all the three parameters above must be constant or defined by the macro for ease in changes during compilation.
+Stdlib `digitalWrite` on Arduino Uno 16MHz   => **6280 ns**
+HolyDio `dioWrite`                           => **125 ns**.
 
-For example: 
-* use '#define pinNum 10' instead of `int pinNum = 10;`
-* use 'const int pinNum 10' instead of `int pinNum = 10;`
+## Why make things fast fast?
 
-Setting the parameter as a variable would cause the macro to return an error during compilation.
+- Your application might require it to meet a sufficient update rate
+- Less wasted cycles is less wasted watts.
+   - For a battery appliance, for instance, putting the SBC into low
+     power sleep mode as soon, long and often as possible is desirable.
+- The less energy we waste on earth, the more sustainable our future is.
+- Making something _absolutely fastest_ while being _absolutely super
+  simple_ to use is _awesome coolest_ in my book (Yes, I do suffer
+  iheavily from optimization syndrome — growing up with q <= 1MHz 8-bit
+  machines).
 
-This makes sure `digitalWriteFast` that produces faster toggling, and notifies the programmer the specific area where toggling is slow. Otherwise, use normal `digitalWrite`
+## Supported Hardware
+- Arduino Due
+- Arduino Zero
+- Arduino Mega
+- Arduino with ATmega644 or Atmega644P chip
+- Arduino Leonardo
+- Arduino Uno
 
-This is opposed to the forked library form Watterott, where if a variable is used as the parameter, the macro would revert to use sold `digitalWrite`, and remain undetected.
-
-
-## Speed
-
-The regular `digitalWrite()` in Arduino Uno core (16MHz) takes about **6280nS** while `digitalWriteFast()` port manipulation takes **125nS**.
-> More info in: [/NOTES/NOTES.md](/NOTES/NOTES.md)
-
-This is a huge difference, especially or timing sensitive applications.
-
-Direct port manipulation is troublesome where one has to refer to the pin assignment of the package and manipulate specific ports, instead of pin numbers on the Arduino board.
-
-This library makes it easier by using `digitalWriteFast()` and the macro will replace it will the approritate port manipulation commands.
-
-## Compatibility
-* Arduino Due
-* Arduino Zero
-* Arduino Mega
-* Arduino with ATmega644 or Atmega644P chip
-* Arduino Leonardo
-* Arduino Uno (I have only tested with uno)
-
-If not in the list, the macro will revert back to  `digitalWrite()`, `pinMode()` or `digitalRead()`
+If your SBC is not in the list, it will fail with a compile time error.
+Extending the library is very simple, so please take a stab at it and
+PR - I've littered the source code with comments, so it's a good
+exercise for the keen coder.
 
 ## Installation
-1. Download the repo as zip, extract and place into Arduino IDE libraries folder.
-2. Rename "digitalWriteFast-master" to "digitalWriteFast" Arduino IDE does not accept dash character.
-
+- Use `glue` package manager in your proj dir: `glue add HolyDio`
+- Or simply `git clone` the repo in to your projects deps dir (if using build scripts - you should ;-) )
+- Or `git clone` into arduino central libraries dir, if you use that hideous coding environment!
 
 ## Reference
-Fork of Watterott's https://github.com/watterott/Arduino-Libs/tree/master/digitalWriteFast
-I just forked the whole repo, and delete unrelated files, I tried sparse checkout and gave up.
+I've used arduino-stdlib/hardware/*/pins.h and Watterott's monolith bundle https://github.com/watterott/Arduino-Libs/tree/master/digitalWriteFast
+as references for pin-numbering and address-mapping.
 
-Watterott's digitalWriteFast could have used the below links as referrence.
-* https://code.google.com/archive/p/digitalwritefast/downloads 
-* http://forum.arduino.cc/index.php?topic=46896.0
